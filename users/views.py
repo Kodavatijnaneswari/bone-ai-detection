@@ -8,7 +8,7 @@ from django.shortcuts import render, redirect
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.contrib import messages
-from ultralytics import YOLO
+# from ultralytics import YOLO (Moved inside function to save memory)
 from admins.models import modeldata
 from .models import DiagnosticResult
 
@@ -69,29 +69,29 @@ def training(request):
             print(f"Error parsing training logs: {e}")
     return render(request, 'users/training.html', {"training_data": training_data})
 
-# -------- YOLO MODEL LOAD --------
-# Primary: media/YOLOv8x-best.pt (commonly used in this project)
-# Fallback: yolov8s.pt (base model in root) or yolov8n.pt
-MODEL_PATH = os.path.join(settings.BASE_DIR, 'media', 'YOLOv8x-best.onnx')
-PT_FALLBACK_PATH = os.path.join(settings.BASE_DIR, 'media', 'YOLOv8x-best.pt')
-ROOT_PT_PATH = os.path.join(settings.BASE_DIR, 'yolov8s.pt')
+# -------- LAZY MODEL LOADER --------
+_model = None
 
-if not os.path.exists(MODEL_PATH):
-    if os.path.exists(PT_FALLBACK_PATH):
-        MODEL_PATH = PT_FALLBACK_PATH
-    elif os.path.exists(ROOT_PT_PATH):
-        MODEL_PATH = ROOT_PT_PATH
-
-try:
-    if os.path.exists(MODEL_PATH):
-        # Specifying task='detect' saves memory and prevents 'guessing' logic on startup
-        model = YOLO(MODEL_PATH, task='detect')
-    else:
-        print(f"Engine Load Warning: No model file found at {MODEL_PATH}")
-        model = None
-except Exception as e:
-    print(f"Engine Load Warning: {e}")
-    model = None
+def get_model():
+    global _model
+    if _model is None:
+        try:
+            from ultralytics import YOLO
+            MODEL_PATH = os.path.join(settings.BASE_DIR, 'media', 'YOLOv8x-best.onnx')
+            PT_FALLBACK_PATH = os.path.join(settings.BASE_DIR, 'media', 'YOLOv8x-best.pt')
+            
+            if not os.path.exists(MODEL_PATH) and os.path.exists(PT_FALLBACK_PATH):
+                MODEL_PATH = PT_FALLBACK_PATH
+            
+            if os.path.exists(MODEL_PATH):
+                # Specifying task='detect' saves memory
+                _model = YOLO(MODEL_PATH, task='detect')
+                print(f"AI Engine Loaded: {MODEL_PATH}")
+            else:
+                print(f"Error: No model found at {MODEL_PATH}")
+        except Exception as e:
+            print(f"Model Load Error: {e}")
+    return _model
 
 # -------- IMAGE UPLOAD AND DETECTION --------
 def upload_image(request):
@@ -135,6 +135,7 @@ def upload_image(request):
                     "error_message": "Non-X-ray (Color) image detected. AI analysis is restricted to diagnostic grayscale medical X-rays for perfect accuracy."
                 })
 
+            model = get_model()
             if model is None:
                 return render(request, "users/result.html", {"error_message": "AI Diagnostic Engine not initialized."})
 

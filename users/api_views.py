@@ -7,16 +7,31 @@ from django.core.files.storage import default_storage
 from admins.models import modeldata
 from .models import DiagnosticResult
 from .serializers import DiagnosticResultSerializer, UserSerializer
-from ultralytics import YOLO
+# from ultralytics import YOLO (Moved inside function to save memory)
 import cv2
 import numpy as np
 
-# Load model once at module level
-MODEL_PATH = os.path.join(settings.BASE_DIR, 'runs/detect/optimized_bone_model/weights/best.pt')
-try:
-    model = YOLO(MODEL_PATH)
-except:
-    model = None
+# -------- LAZY MODEL LOADER --------
+_model = None
+
+def get_model():
+    global _model
+    if _model is None:
+        try:
+            from ultralytics import YOLO
+            MODEL_PATH = os.path.join(settings.BASE_DIR, 'media', 'YOLOv8x-best.onnx')
+            PT_FALLBACK_PATH = os.path.join(settings.BASE_DIR, 'media', 'YOLOv8x-best.pt')
+            
+            if not os.path.exists(MODEL_PATH) and os.path.exists(PT_FALLBACK_PATH):
+                MODEL_PATH = PT_FALLBACK_PATH
+            
+            if os.path.exists(MODEL_PATH):
+                _model = YOLO(MODEL_PATH, task='detect')
+            else:
+                print(f"API Error: No model found at {MODEL_PATH}")
+        except Exception as e:
+            print(f"API Model Load Error: {e}")
+    return _model
 
 class DetectionAPIView(APIView):
     def post(self, request, *args, **kwargs):
@@ -38,22 +53,25 @@ class DetectionAPIView(APIView):
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             hist = cv2.calcHist([gray], [0], None, [256], [0,256])
             
+            # Synchronized Strict Thresholds
             is_perfectly_gray = mean_diff < 5.0
-            is_mostly_gray = mean_diff < 20.0
-            background_ratio = np.sum(hist[:30]) / np.sum(hist)
-            bone_peak_ratio = np.sum(hist[140:]) / np.sum(hist)
+            is_valid_medical_tone = mean_diff < 12.0
+            background_ratio = np.sum(hist[:40]) / np.sum(hist)
+            bone_peak_ratio = np.sum(hist[120:]) / np.sum(hist)
             
             if is_perfectly_gray:
                 is_valid_xray = True
-            elif is_mostly_gray:
-                is_valid_xray = (background_ratio > 0.02) or (bone_peak_ratio > 0.0001)
+            elif is_valid_medical_tone:
+                is_valid_xray = (background_ratio > 0.05) or (bone_peak_ratio > 0.10)
             else:
                 is_valid_xray = False
                 
             if not is_valid_xray:
                 return Response({
-                    "error": "Non-X-ray image detected. Please upload an original grayscale medical X-ray."
+                    "error": "Non-X-ray image detected. AI analysis is restricted to diagnostic grayscale medical X-rays for perfect accuracy."
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+            model = get_model()
 
             if model is None:
                 return Response({"error": "AI Diagnostic Engine not initialized"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
