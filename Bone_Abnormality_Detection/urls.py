@@ -29,8 +29,13 @@ urlpatterns = [
 
     # API Endpoints for React Native
     path('api/login/', api.LoginAPIView.as_view(), name='api_login'),
+    path('api/register/', api.RegistrationAPIView.as_view(), name='api_register'),
+    path('api/admin-login/', api.AdminLoginAPIView.as_view(), name='api_admin_login'),
     path('api/detect/', api.DetectionAPIView.as_view(), name='api_detect'),
     path('api/history/<int:userid>/', api.HistoryAPIView.as_view(), name='api_history'),
+    path('api/admin/users/', api.AdminUsersAPIView.as_view(), name='api_admin_users'),
+    path('api/admin/stats/', api.AdminStatsAPIView.as_view(), name='api_admin_stats'),
+    path('api/admin/users/<int:userid>/<str:action>/', api.AdminActionAPIView.as_view(), name='api_admin_action'),
 
     path('', u.index, name='index'),
     path('upload_image/', u.upload_image, name='upload_image'),

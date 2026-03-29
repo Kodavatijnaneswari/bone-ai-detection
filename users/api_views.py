@@ -177,3 +177,76 @@ class HistoryAPIView(APIView):
         results = DiagnosticResult.objects.filter(user_id=userid).order_by('-uploaded_at')
         serializer = DiagnosticResultSerializer(results, many=True)
         return Response(serializer.data)
+
+class RegistrationAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        try:
+            # Check if user already exists
+            if modeldata.objects.filter(username=data.get('username')).exists():
+                return Response({"error": "Username already exists"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Simple manual save (matching project's existing non-hashed password pattern)
+            new_user = modeldata.objects.create(
+                name=data.get('name', ''),
+                username=data.get('username', ''),
+                password=data.get('password', ''),
+                mobile=data.get('mobile', ''),
+                email=data.get('email', ''),
+                address=data.get('address', ''),
+                status='Waiting' # Default for new mobile registrations
+            )
+            
+            return Response({
+                "message": "Registration successful! Please wait for clinical admin activation.",
+                "id": new_user.id
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+             return Response({"error": f"Registration Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class AdminLoginAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        
+        # Simple admin check (matching admins/views.py logic)
+        if username == 'admin' and password == 'admin':
+            return Response({"success": True, "token": "admin_session_token", "is_admin": True})
+        return Response({"error": "Admin credentials invalid"}, status=status.HTTP_401_UNAUTHORIZED)
+
+class AdminStatsAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        # Basic Clinical Statistics for Mobile Admin Dashboard
+        total_users = modeldata.objects.count()
+        active_users = modeldata.objects.filter(status='Activated').count()
+        total_cases = DiagnosticResult.objects.count()
+        
+        return Response({
+            "total_users": total_users,
+            "active_users": active_users,
+            "total_cases": total_cases,
+            "abnormal_cases": DiagnosticResult.objects.filter(finding='Abnormal').count()
+        })
+
+class AdminUsersAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        users = modeldata.objects.all().order_by('-id')
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
+
+class AdminActionAPIView(APIView):
+    def post(self, request, userid, action, *args, **kwargs):
+        try:
+            user = modeldata.objects.get(id=userid)
+            if action == 'activate':
+                user.status = 'Activated'
+            elif action == 'block':
+                user.status = 'Blocked'
+            elif action == 'delete':
+                user.delete()
+                return Response({"message": "User deleted successully"})
+            
+            user.save()
+            return Response({"message": f"User {action}d successfully"})
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
