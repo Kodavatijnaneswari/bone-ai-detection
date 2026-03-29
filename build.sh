@@ -8,4 +8,5 @@ pip install -r requirements.txt
 rm -rf runs/ detect/ 2>/dev/null || true
 
 python manage.py collectstatic --noinput
+python manage.py makemigrations admins users
 python manage.py migrate

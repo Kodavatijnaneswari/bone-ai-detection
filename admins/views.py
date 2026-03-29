@@ -7,22 +7,28 @@ from django.db import IntegrityError
 def adminhome(request):
     return render(request, 'admins/adminhome.html')
 
+from django.http import HttpResponse
+
 def register(request):
-    if request.method == 'POST':
-        form = modeldataForm(request.POST)
-        if form.is_valid():
-            try:
-                form.save()
-                form = modeldataForm()
-                messages.success(request, 'Registered Successfully! Please wait for admin activation.')
-                return render(request, 'register.html', {'form': form, 'message': 'Registered Successfully'})
-            except IntegrityError:
-                messages.error(request, 'Username already exists. Please choose another one.')
+    try:
+        if request.method == 'POST':
+            form = modeldataForm(request.POST)
+            if form.is_valid():
+                try:
+                    form.save()
+                    form = modeldataForm()
+                    messages.success(request, 'Registered Successfully! Please wait for admin activation.')
+                    return render(request, 'register.html', {'form': form, 'message': 'Registered Successfully'})
+                except IntegrityError:
+                    messages.error(request, 'Username already exists. Please choose another one.')
+            else:
+                messages.error(request, 'Please correct the errors below.')
         else:
-            messages.error(request, 'Please correct the errors below.')
-    else:
-        form = modeldataForm()
-    return render(request, 'register.html', {'form': form})
+            form = modeldataForm()
+        return render(request, 'register.html', {'form': form})
+    except Exception as e:
+        import traceback
+        return HttpResponse(f"DIAGNOSTIC ERROR: {str(e)}<br><pre>{traceback.format_exc()}</pre>", status=500)
 
 
 def view(request):
