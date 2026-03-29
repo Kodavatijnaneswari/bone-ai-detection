@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BoneAI | Intelligent Radiograph Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-bg: #0a192f;
+            --accent-color: #64ffda;
+            --text-main: #e6f1ff;
+            --text-dim: #8892b0;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--primary-bg);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(100, 255, 218, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 102, 204, 0.1) 0%, transparent 40%);
+            color: var(--text-main);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .navbar {
+            padding: 30px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .navbar .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .navbar .menu {
+            display: flex;
+            gap: 30px;
+        }
+
+        .navbar .menu a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 400;
+            transition: 0.3s;
+        }
+
+        .navbar .menu a:hover {
+            color: var(--accent-color);
+        }
+
+        .hero {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 50px;
+            text-align: center;
+        }
+
+        .hero-content {
+            max-width: 900px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .hero h1 {
+            font-size: 64px;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #fff, var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.1;
+        }
+
+        .hero p {
+            font-size: 20px;
+            color: var(--text-dim);
+            line-height: 1.8;
+            margin-bottom: 40px;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: var(--primary-bg);
+            padding: 18px 45px;
+            border-radius: 40px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 18px;
+            transition: 0.3s;
+            display: inline-block;
+            box-shadow: 0 10px 20px rgba(100, 255, 218, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(100, 255, 218, 0.4);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            padding: 100px 50px;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .feature-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            transition: 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent-color);
+        }
+
+        .feature-card i {
+            font-size: 30px;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 15px;
+        }
+
+        .feature-card p {
+            font-size: 14px;
+            color: var(--text-dim);
+            margin: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 40px; }
+            .navbar { padding: 20px 30px; }
+            .navbar .menu { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{% url 'index' %}" class="logo">
+            <i class="fa-solid fa-bone"></i>
+            <span>BoneAI</span>
+        </a>
+        <div class="menu">
+            <a href="{% url 'userlogin' %}">User Portal</a>
+            <a href="{% url 'adminlogin' %}">Admin Access</a>
+            <a href="{% url 'register' %}">Create Account</a>
+        </div>
+    </nav>
+
+    <div class="main-content" style="flex: 1; display: flex; align-items: center; justify-content: center;">
+        {% block content %}
+        <section class="hero">
+            <div class="hero-content">
+                <div style="color: var(--accent-color); font-weight: 600; text-transform: uppercase; letter-spacing: 5px; margin-bottom: 20px;">
+                    Empowering Radiology with AI
+                </div>
+                <h1>Bone Abnormality Detection And Segmentation</h1>
+                <p>
+                    Advanced deep learning algorithms designed to assist healthcare professionals in 
+                    detecting Complete, Incomplete, and Dislocated fractures with unmatched precision 
+                    and real-time Grad-CAM highlighting.
+                </p>
+                <a href="{% url 'userlogin' %}" class="btn-primary">Launch Application</a>
+            </div>
+        </section>
+        {% endblock %}
+    </div>
+
+    {% if not request.path or request.path == '/' %}
+    <div class="features-grid">
+        <div class="feature-card">
+            <i class="fa-solid fa-bolt-lightning"></i>
+            <h3>Real-time Analysis</h3>
+            <p>Processed in under 100ms with YOLOv8 optimized neural architectures.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fa-solid fa-bullseye"></i>
+            <h3>98% Accuracy</h3>
+            <p>Trained on specialized orthopedic datasets for clinical reliability.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fa-solid fa-eye"></i>
+            <h3>Visual Insight</h3>
+            <p>Heatmap overlays point clinicians directly to the site of abnormality.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <footer style="padding: 40px; text-align: center; color: var(--text-dim); font-size: 14px;">
+        &copy; 2026 BoneAI Medical Systems. Transforming Orthopedic Diagnostics.
+    </footer>
+</body>
+</html>
+

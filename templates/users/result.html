@@ -1,0 +1,171 @@
+{% extends 'users/userbase.html' %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+    .result-section {
+        width: 100%;
+        max-width: 1000px;
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    .result-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 30px;
+        align-items: start;
+    }
+
+    .image-preview-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 20px;
+        position: relative;
+    }
+
+    .image-preview-card img {
+        width: 100%;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        display: block;
+    }
+
+    .info-card {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .status-badge {
+        padding: 20px;
+        border-radius: 16px;
+        text-align: center;
+        font-weight: 700;
+        font-size: 20px;
+        border-bottom: 4px solid rgba(0,0,0,0.2);
+    }
+
+    .status-abnormal {
+        background: rgba(255, 85, 85, 0.1);
+        color: #ff5555;
+        border: 1px solid rgba(255, 85, 85, 0.2);
+    }
+
+    .status-normal {
+        background: rgba(100, 255, 218, 0.1);
+        color: var(--accent-color);
+        border: 1px solid rgba(100, 255, 218, 0.2);
+    }
+
+    .detail-item {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        padding: 20px;
+        border-radius: 16px;
+    }
+
+    .detail-item label {
+        display: block;
+        color: var(--text-dim);
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+    }
+
+    .detail-item span {
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .btn-secondary {
+        display: block;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        color: var(--text-main);
+        padding: 15px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--accent-color);
+    }
+
+    @media (max-width: 900px) {
+        .result-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="result-section">
+    {% if error_message %}
+        <div class="glass-card" style="border-color: #ff5555;">
+            <i class="fa-solid fa-circle-exclamation" style="font-size: 50px; color: #ff5555; margin-bottom: 20px;"></i>
+            <h2 style="color: #ff5555;">Analysis Error</h2>
+            <p>{{ error_message }}</p>
+            <a href="{% url 'upload_image' %}" class="btn-action" style="display:inline-block; padding: 12px 30px; text-decoration: none; border-radius: 20px;">Try Again</a>
+        </div>
+    {% else %}
+        <div class="result-grid">
+            <!-- Image Side -->
+            <div class="image-preview-card">
+                <div style="margin-bottom: 15px; font-weight: 600; color: var(--text-dim); font-size: 14px;">
+                    <i class="fa-solid fa-microscope"></i> AI PROCESSED RADIOGRAPH
+                </div>
+                <img src="{{ output_image_url }}" alt="AI Diagnosis Result">
+            </div>
+
+            <!-- Info Side -->
+            <div class="info-card">
+                {% if "Normal" in success_message %}
+                <div class="status-badge status-normal">
+                    <i class="fa-solid fa-circle-check"></i> NORMAL BONE STRUCTURE
+                </div>
+                {% else %}
+                <div class="status-badge status-abnormal">
+                    <i class="fa-solid fa-triangle-exclamation"></i> ABNORMALITY DETECTED
+                </div>
+                {% endif %}
+
+                <div class="detail-item">
+                    <label>Inference Result</label>
+                    <span style="color: var(--accent-color);">{{ success_message }}</span>
+                </div>
+
+                {% if detailed_info %}
+                <div class="detail-item">
+                    <label>Fracture Categorization</label>
+                    <span>{{ detailed_info }}</span>
+                </div>
+                {% endif %}
+
+                <div class="detail-item">
+                    <label>AI Confidence Indicator</label>
+                    <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; margin-top: 10px;">
+                        <div style="background: var(--accent-color); width: 85%; height: 100%; border-radius: 4px; box-shadow: 0 0 10px var(--accent-color);"></div>
+                    </div>
+                    <p style="font-size: 12px; margin-top: 5px; color: var(--text-dim);">High Confidence Detection</p>
+                </div>
+
+                <a href="{% url 'upload_image' %}" class="btn-submit" style="display: block; text-decoration: none; text-align: center;">
+                    <i class="fa-solid fa-plus"></i> New Analysis
+                </a>
+                
+                <a href="/userbase" class="btn-secondary">
+                    <i class="fa-solid fa-chevron-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+

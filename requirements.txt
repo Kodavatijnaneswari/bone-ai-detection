@@ -1,0 +1,33 @@
+# Core Django
+Django==4.2.15
+djangorestframework==3.15.2
+django-cors-headers==4.4.0
+django-crispy-forms==2.3
+django-extensions==3.2.3
+django-pandas==0.6.7
+
+# AI / ML / Computer Vision
+ultralytics>=8.2.0
+torch>=2.0.0
+torchvision>=0.15.0
+opencv-python-headless>=4.8.0
+pillow>=10.0.0
+numpy>=1.23.5
+pandas>=1.5.0
+
+# Utilities
+requests==2.25.1
+whitenoise==6.7.0
+asgiref==3.8.1
+sqlparse==0.5.1
+tzdata==2024.1
+python-dateutil==2.8.2
+tqdm==4.66.5
+PyYAML==6.0.2
+
+# PDF Generation (if used in clinical reporting)
+reportlab==4.2.5
+
+# Production
+gunicorn==22.0.0
+dj-database-url==2.1.0

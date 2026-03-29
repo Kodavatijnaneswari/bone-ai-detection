@@ -1,0 +1,53 @@
+"""
+URL configuration for Wrist_Abnormality_Detection project.
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/4.2/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  path('', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+Including another URLconf
+    1. Import the include() function: from django.urls import include, path
+    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+"""
+from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import path, include
+from admins import views
+from users import views as u
+from users import api_views as api
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    # path('', include('users.urls')),
+
+    # API Endpoints for React Native
+    path('api/login/', api.LoginAPIView.as_view(), name='api_login'),
+    path('api/detect/', api.DetectionAPIView.as_view(), name='api_detect'),
+    path('api/history/<int:userid>/', api.HistoryAPIView.as_view(), name='api_history'),
+
+    path('', u.index, name='index'),
+    path('upload_image/', u.upload_image, name='upload_image'),
+    path('result/', u.show_result, name='show_result'),
+    path('userbase/', u.userbase, name='userbase'),
+    path('userlogin/', u.userlogin, name='userlogin'),
+    path('training/', u.training, name='training'),
+    path('history/', u.history, name='history'),
+    path('generate_report/<int:result_id>/', u.generate_report, name='generate_report'),
+
+    path('register/', views.register, name='register'),
+    path('view/', views.view, name='view'),
+    path('activate/<int:id>', views.activate, name='activate'),
+    path('block1/<int:id>', views.block, name='block1'),
+    path('adminhome/', views.adminhome, name='adminhome'),
+    path('adminlogin/', views.adminlogin, name='adminlogin'),
+    path('adminbase/', views.adminbase, name='adminbase'),
+    path('delete/<int:id>', views.delete, name='delete'),
+
+
+]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

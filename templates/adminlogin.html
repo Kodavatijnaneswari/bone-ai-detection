@@ -1,0 +1,106 @@
+{% extends 'home.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .auth-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 40px;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    .auth-card h2 {
+        margin-bottom: 30px;
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--accent-color);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+        text-align: left;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 14px;
+        color: var(--text-dim);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .form-group input {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        padding: 12px 15px;
+        border-radius: 10px;
+        color: #fff;
+        font-family: inherit;
+        outline: none;
+        transition: 0.3s;
+    }
+
+    .form-group input:focus {
+        border-color: var(--accent-color);
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-admin {
+        width: 100%;
+        background: #007bff; /* Different color for admin to distinguish */
+        color: #fff;
+        border: none;
+        padding: 15px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.3s;
+        margin-top: 10px;
+        box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+    }
+
+    .btn-admin:hover {
+        background: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 123, 255, 0.5);
+    }
+</style>
+
+<div class="auth-card">
+    <div style="text-align: center; margin-bottom: 20px; color: var(--accent-color); font-size: 40px;">
+        <i class="fa-solid fa-user-shield"></i>
+    </div>
+    <h2>Admin Access</h2>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div style="background: rgba(255,85,85,0.1); color: #ff5555; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; border: 1px solid rgba(255,85,85,0.2);">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>Administrator Username</label>
+            <input type="text" name="username" placeholder="Admin ID" required>
+        </div>
+        <div class="form-group">
+            <label>Secure Key</label>
+            <input type="password" name="password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-admin">System Login</button>
+    </form>
+</div>
+{% endblock %}
+

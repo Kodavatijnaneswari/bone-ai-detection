@@ -1,0 +1,198 @@
+{% extends 'users/userbase.html' %}
+{% load static %}
+
+{% block contents %}
+<style>
+    :root {
+        --glass-bg: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1);
+        --accent-blue: #00ecff;
+        --accent-purple: #9d50bb;
+        --success-green: #00f260;
+        --danger-red: #ff0080;
+    }
+
+    .history-container {
+        padding: 40px;
+        min-height: 100vh;
+        background: radial-gradient(circle at top right, #1a1a2e, #16213e);
+        color: white;
+    }
+
+    .header-section {
+        margin-bottom: 40px;
+        text-align: center;
+    }
+
+    .header-section h1 {
+        font-size: 2.5rem;
+        background: linear-gradient(45deg, var(--accent-blue), var(--accent-purple));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .history-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 25px;
+    }
+
+    .result-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(15px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+    }
+
+    .result-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        border-color: var(--accent-blue);
+    }
+
+    .card-preview {
+        height: 200px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .card-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+
+    .result-card:hover .card-preview img {
+        transform: scale(1.1);
+    }
+
+    .status-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        padding: 5px 15px;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        backdrop-filter: blur(5px);
+    }
+
+    .status-abnormal { background: rgba(255, 0, 128, 0.2); color: #ff0080; border: 1px solid #ff0080; }
+    .status-normal { background: rgba(0, 242, 96, 0.2); color: #00f260; border: 1px solid #00f260; }
+
+    .card-body {
+        padding: 20px;
+    }
+
+    .card-category {
+        font-size: 0.9rem;
+        color: var(--accent-blue);
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .card-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 15px;
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .confidence-bar {
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        margin-top: 5px;
+        overflow: hidden;
+    }
+
+    .confidence-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+    }
+
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 100px;
+        background: var(--glass-bg);
+        border-radius: 30px;
+        border: 2px dashed var(--glass-border);
+    }
+
+    .btn-report {
+        display: inline-block;
+        margin-top: 15px;
+        padding: 8px 20px;
+        background: linear-gradient(45deg, var(--accent-blue), var(--accent-purple));
+        border-radius: 10px;
+        color: white;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: opacity 0.3s;
+    }
+
+    .btn-report:hover {
+        opacity: 0.8;
+        color: white;
+    }
+</style>
+
+<div class="history-container">
+    <div class="header-section">
+        <h1>Clinical Diagnostic History</h1>
+        <p class="text-white-50">Secure repository of AI-powered bone abnormality detections</p>
+    </div>
+
+    <div class="history-grid">
+        {% for result in results %}
+        <div class="result-card">
+            <div class="card-preview">
+                <img src="{{ MEDIA_URL }}{{ result.processed_image }}" alt="Radiograph Preview">
+                <span class="status-badge {% if result.finding == 'Abnormal' %}status-abnormal{% else %}status-normal{% endif %}">
+                    {{ result.finding }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="card-category">{{ result.category }}</div>
+                <div class="confidence-label d-flex justify-content-between">
+                    <span>AI Confidence</span>
+                    <span>{{ result.confidence|floatformat:2 }}</span>
+                </div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" style="width: {% widthratio result.confidence 1 100 %}%"></div>
+                </div>
+                
+                <div class="card-meta">
+                    <span><i class="far fa-calendar-alt"></i> {{ result.uploaded_at|date:"M d, Y" }}</span>
+                    <span><i class="far fa-clock"></i> {{ result.uploaded_at|time:"H:i" }}</span>
+                </div>
+
+                <a href="{% url 'generate_report' result.id %}" class="btn-report">
+                    <i class="fas fa-file-pdf"></i> Export Report
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <i class="fas fa-microscope fa-4x mb-4 text-white-50"></i>
+            <h3>No Diagnostic Records Found</h3>
+            <p class="text-white-50">Upload an X-ray image to start building your clinical history repository.</p>
+            <a href="{% url 'upload_image' %}" class="btn btn-outline-cyan mt-3">Start Detection</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends 'users/userbase.html' %}
+{% load static %}
+
+{% block extra_head %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<style>
+    .training-section {
+        width: 100%;
+        max-width: 1000px;
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    .dataTables_wrapper {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 30px;
+        backdrop-filter: blur(10px);
+    }
+
+    table.dataTable {
+        border-collapse: separate !important;
+        border-spacing: 0 10px !important;
+        background: transparent !important;
+        color: var(--text-main) !important;
+    }
+
+    table.dataTable thead th {
+        border-bottom: 2px solid var(--accent-color) !important;
+        color: var(--accent-color) !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 12px;
+        padding: 15px !important;
+    }
+
+    table.dataTable tbody tr {
+        background: rgba(255, 255, 255, 0.03) !important;
+        transition: 0.3s;
+    }
+
+    table.dataTable tbody tr:hover {
+        background: rgba(100, 255, 218, 0.05) !important;
+        transform: scale(1.01);
+    }
+
+    table.dataTable tbody td {
+        padding: 15px !important;
+        border: none !important;
+        font-size: 14px;
+    }
+
+    .dataTables_filter input {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid var(--glass-border) !important;
+        border-radius: 8px !important;
+        padding: 8px !important;
+        color: var(--text-main) !important;
+        outline: none !important;
+    }
+
+    .dataTables_paginate .paginate_button {
+        color: var(--text-main) !important;
+    }
+
+    .dataTables_paginate .paginate_button.current {
+        background: var(--accent-color) !important;
+        color: var(--primary-bg) !important;
+        border: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="training-section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h2 style="color: var(--accent-color); margin: 0;">
+            <i class="fa-solid fa-microchip"></i> Model Optimization Logs
+        </h2>
+        <div style="font-size: 13px; color: var(--text-dim);">
+            <i class="fa-solid fa-circle-dot" style="color: var(--accent-color); font-size: 10px;"></i> LIVE TRAINING SESSION
+        </div>
+    </div>
+
+    <table id="progressTable" class="display responsive nowrap">
+        <thead>
+            <tr>
+                <th>Epoch Index</th>
+                <th>Box Loss (Localization)</th>
+                <th>Cls Loss (Classification)</th>
+                <th>Mnemonic Metrics (mAP50)</th>
+                <th>Validation Loss</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if training_data %}
+                {% for row in training_data %}
+                <tr>
+                    <td>#{{ forloop.counter }}</td>
+                    <td>{{ row.box_loss|floatformat:4 }}</td>
+                    <td>{{ row.cls_loss|floatformat:4 }}</td>
+                    <td>{{ row.map50|floatformat:4 }}</td>
+                    <td>{{ row.val_loss|floatformat:4 }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 40px !important;">
+                        <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i><br>
+                        Awaiting initial epoch sequences...
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#progressTable').DataTable({
+            "paging": true,
+            "searching": true,
+            "ordering": true,
+            "pageLength": 10,
+            "language": {
+                "search": "_INPUT_",
+                "searchPlaceholder": "Search logs..."
+            }
+        });
+    });
+</script>
+{% endblock %}
+

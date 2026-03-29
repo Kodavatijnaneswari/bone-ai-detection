@@ -1,0 +1,143 @@
+{% extends 'admins/adminbase.html' %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+    .view-section {
+        width: 100%;
+        max-width: 1200px;
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    .table-container {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 30px;
+        backdrop-filter: blur(10px);
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 10px;
+    }
+
+    th {
+        color: var(--accent-color);
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 1px;
+        text-align: left;
+        padding: 15px;
+        border-bottom: 2px solid var(--glass-border);
+    }
+
+    td {
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.03);
+        border-top: 1px solid var(--glass-border);
+        border-bottom: 1px solid var(--glass-border);
+        font-size: 14px;
+        color: var(--text-main);
+    }
+
+    td:first-child { border-left: 1px solid var(--glass-border); border-radius: 12px 0 0 12px; }
+    td:last-child { border-right: 1px solid var(--glass-border); border-radius: 0 12px 12px 0; }
+
+    tr:hover td {
+        background: rgba(100, 255, 218, 0.05);
+        color: var(--accent-color);
+    }
+
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .status-active { background: rgba(100, 255, 218, 0.1); color: var(--accent-color); }
+    .status-waiting { background: rgba(255, 215, 0, 0.1); color: #ffd700; }
+    .status-blocked { background: rgba(255, 85, 85, 0.1); color: #ff5555; }
+
+    .btn-action {
+        text-decoration: none;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        transition: 0.3s;
+        display: inline-block;
+    }
+
+    .btn-activate { background: rgba(100, 255, 218, 0.1); color: var(--accent-color); border: 1px solid var(--accent-color); }
+    .btn-activate:hover { background: var(--accent-color); color: var(--primary-bg); }
+
+    .btn-block { background: rgba(255, 85, 85, 0.1); color: #ff5555; border: 1px solid #ff5555; }
+    .btn-block:hover { background: #ff5555; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="view-section">
+    <div style="margin-bottom: 30px;">
+        <h2 style="color: var(--accent-color); margin: 0;"><i class="fa-solid fa-users-gear"></i> User Authentication Management</h2>
+        <p style="color: var(--text-dim); font-size: 14px;">Authorize and audit clinical staff access to the diagnostic platform.</p>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Clinical Staff</th>
+                    <th>Contact Info</th>
+                    <th>Region/Address</th>
+                    <th>Access Status</th>
+                    <th>Control Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in modeldataA %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 600; color: var(--text-main);">{{ data.name }}</div>
+                        <div style="font-size: 12px; color: var(--text-dim);">ID: {{ data.username }}</div>
+                    </td>
+                    <td>
+                        <div style="font-size: 13px;"><i class="fa-solid fa-phone" style="font-size: 10px; color: var(--accent-color);"></i> {{ data.mobile }}</div>
+                        <div style="font-size: 13px;"><i class="fa-solid fa-envelope" style="font-size: 10px; color: var(--accent-color);"></i> {{ data.email }}</div>
+                    </td>
+                    <td>
+                        <div style="font-size: 13px; color: var(--text-dim); max-width: 200px;">{{ data.address }}</div>
+                    </td>
+                    <td>
+                        {% if data.status == 'waiting' %}
+                            <span class="status-badge status-waiting">Pending Approval</span>
+                        {% elif data.status == 'Activated' %}
+                            <span class="status-badge status-active">Authorized</span>
+                        {% else %}
+                            <span class="status-badge status-blocked">{{ data.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            {% if data.status == 'waiting' %}
+                                <a href="{% url 'activate' data.id %}" class="btn-action btn-activate">Authorize</a>
+                                <a href="{% url 'delete' data.id %}" class="btn-action btn-block"><i class="fa-solid fa-trash"></i></a>
+                            {% else %}
+                                <a href="{% url 'block1' data.id %}" class="btn-action btn-block">Revoke</a>
+                                <a href="{% url 'delete' data.id %}" class="btn-action btn-block"><i class="fa-solid fa-trash"></i></a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+

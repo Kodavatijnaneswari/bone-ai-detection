@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: bone-abnormality-detection
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn Bone_Abnormality_Detection.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: RENDER
+        value: "True"
