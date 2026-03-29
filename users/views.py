@@ -193,9 +193,9 @@ def upload_image(request):
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             hist = cv2.calcHist([gray], [0], None, [256], [0,256])
             
-            # Ultimate relaxation to support tinted or watermarked radiographs
-            is_perfectly_gray = mean_diff < 15.0
-            is_valid_medical_tone = mean_diff < 50.0
+            # Strict validation: Reject all non-medical color images
+            is_perfectly_gray = mean_diff < 8.0
+            is_valid_medical_tone = mean_diff < 20.0 # Strict Clinical Standard
             
             # Check for standard X-ray features (black corners/background)
             background_ratio = np.sum(hist[:40]) / np.sum(hist) # Focus on near-black
@@ -279,7 +279,8 @@ def upload_image(request):
                     if cls_id == 0: stage = f"Elbow {current_stage}"
 
                 cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-                sigma = max(box_w / 3.0, box_h / 3.0, 5.0)
+                # Tighter Gaussian sigma for pinpoint heatmap on affected area
+                sigma = max(box_w / 6.0, box_h / 6.0, 10.0)
                 Y, X = np.ogrid[:img.shape[0], :img.shape[1]]
                 gauss = np.exp(-((X - cx)**2 + (Y - cy)**2) / (2 * sigma**2))
                 heatmap = np.maximum(heatmap, gauss)
@@ -290,7 +291,7 @@ def upload_image(request):
 
             heatmap = np.uint8(255 * heatmap)
             heatmap_color = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-            alpha, mask = 0.4, heatmap > 20
+            alpha, mask = 0.6, heatmap > 20 # Increased Alpha for higher intensity
             overlay[mask] = cv2.addWeighted(img, 1 - alpha, heatmap_color, alpha, 0)[mask]
 
             output_filename = "detected_" + uploaded_image.name
