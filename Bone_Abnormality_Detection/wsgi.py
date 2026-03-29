@@ -1,5 +1,5 @@
 """
-WSGI config for Wrist_Abnormality_Detection project.
+WSGI config for Bone_Abnormality_Detection project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 

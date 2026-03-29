@@ -12,11 +12,12 @@ def register(request):
         if form.is_valid():
             form.save()
             form = modeldataForm()
-            messages.success(request, 'Registered Successfully')
-            return render(request, 'register.html', {'form': form,'message': 'Registered Successfully'})
+            messages.success(request, 'Registered Successfully! Please wait for admin activation.')
+            return render(request, 'register.html', {'form': form, 'message': 'Registered Successfully'})
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = modeldataForm()
-        messages.error(request, 'Check your data entered')
     return render(request, 'register.html', {'form': form})
 
 

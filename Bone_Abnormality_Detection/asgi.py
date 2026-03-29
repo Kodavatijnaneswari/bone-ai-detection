@@ -1,5 +1,5 @@
 """
-ASGI config for Wrist_Abnormality_Detection project.
+ASGI config for Bone_Abnormality_Detection project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
