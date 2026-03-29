@@ -105,14 +105,6 @@ def upload_image(request):
             if img is None:
                 return render(request, "users/result.html", {"error_message": "Invalid image format."})
 
-            # Optimize Memory: Resize large images to standard YOLO input size (640px height)
-            h, w = img.shape[:2]
-            if h > 640 or w > 640:
-                scale = 640 / max(h, w)
-                img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
-                cv2.imwrite(image_full_path, img) # Overwrite with optimized version
-                print(f"Memory Optimized: Image resized to {img.shape[1]}x{img.shape[0]}")
-
             # 1. Grayscale Validation (Stricter for B&W X-rays)
             b, g, r = cv2.split(img)
             mean_diff = (np.mean(cv2.absdiff(r, g)) + np.mean(cv2.absdiff(r, b)) + np.mean(cv2.absdiff(g, b))) / 3.0
@@ -161,7 +153,7 @@ def upload_image(request):
                     userid = request.session.get('userid')
                     if userid:
                         DiagnosticResult.objects.create(
-                            user_id=userid,
+                            user_id=int(userid),
                             original_image=image_path,
                             processed_image=image_path,
                             finding="Normal",
@@ -227,11 +219,11 @@ def upload_image(request):
                 userid = request.session.get('userid')
                 if userid:
                     DiagnosticResult.objects.create(
-                        user_id=userid,
+                        user_id=int(userid),
                         original_image=image_path,
                         processed_image=f"uploads/{output_filename}",
                         finding="Abnormal",
-                        category=stage,
+                        category=str(stage),
                         confidence=float(best_box.conf[0])
                     )
             except Exception as db_e:

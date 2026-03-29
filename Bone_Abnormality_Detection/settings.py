@@ -134,26 +134,10 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
-# Final Production Security & Logging
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = os.environ.get('RENDER', 'False') == 'True'
-DEBUG = os.environ.get('RENDER', 'False') == 'False'
-ALLOWED_HOSTS = ['bone-ai-detection.onrender.com', 'localhost', '127.0.0.1']
-CSRF_TRUSTED_ORIGINS = ['https://bone-ai-detection.onrender.com']
+# Default primary key field type
+# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-}
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

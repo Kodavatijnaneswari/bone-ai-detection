@@ -1,34 +1,24 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render,redirect
 from .models import modeldata
 from .forms import modeldataForm
 from django.contrib import messages
-from django.db import IntegrityError
 
 def adminhome(request):
     return render(request, 'admins/adminhome.html')
 
-from django.http import HttpResponse
-
 def register(request):
-    try:
-        if request.method == 'POST':
-            form = modeldataForm(request.POST)
-            if form.is_valid():
-                try:
-                    form.save()
-                    form = modeldataForm()
-                    messages.success(request, 'Registered Successfully! Please wait for admin activation.')
-                    return render(request, 'register.html', {'form': form, 'message': 'Registered Successfully'})
-                except IntegrityError:
-                    messages.error(request, 'Username already exists. Please choose another one.')
-            else:
-                messages.error(request, 'Please correct the errors below.')
-        else:
+    if request.method == 'POST':
+        form = modeldataForm(request.POST)
+        if form.is_valid():
+            form.save()
             form = modeldataForm()
-        return render(request, 'register.html', {'form': form})
-    except Exception as e:
-        import traceback
-        return HttpResponse(f"DIAGNOSTIC ERROR: {str(e)}<br><pre>{traceback.format_exc()}</pre>", status=500)
+            messages.success(request, 'Registered Successfully! Please wait for admin activation.')
+            return render(request, 'register.html', {'form': form, 'message': 'Registered Successfully'})
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = modeldataForm()
+    return render(request, 'register.html', {'form': form})
 
 
 def view(request):
