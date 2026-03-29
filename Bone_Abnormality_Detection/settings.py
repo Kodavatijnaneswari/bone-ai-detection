@@ -135,7 +135,9 @@ STATICFILES_DIRS = [
 ]
 
 # Final Production Security & Logging
-SECURE_PROXY_SSDEBUG = os.environ.get('RENDER', 'False') == 'False'
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = os.environ.get('RENDER', 'False') == 'True'
+DEBUG = os.environ.get('RENDER', 'False') == 'False'
 ALLOWED_HOSTS = ['bone-ai-detection.onrender.com', 'localhost', '127.0.0.1']
 CSRF_TRUSTED_ORIGINS = ['https://bone-ai-detection.onrender.com']
 
