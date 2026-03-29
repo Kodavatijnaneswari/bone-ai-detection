@@ -132,20 +132,21 @@
                     <i class="fa-solid fa-circle-check"></i> NORMAL BONE STRUCTURE
                 </div>
                 {% else %}
-                <div class="status-badge status-abnormal">
-                    <i class="fa-solid fa-triangle-exclamation"></i> ABNORMALITY DETECTED
-                </div>
-                {% endif %}
-
-                <div class="detail-item">
-                    <label>Inference Result</label>
-                    <span style="color: var(--accent-color);">{{ success_message }}</span>
-                </div>
-
-                {% if detailed_info %}
-                <div class="detail-item">
-                    <label>Fracture Categorization</label>
-                    <span>{{ detailed_info }}</span>
+                <div class="result-card abnormal animate__animated animate__fadeInRight">
+                    <div class="card-header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <h3>Clinical Diagnosis</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="diagnosis-item">
+                            <label>Diagnostic Type:</label>
+                            <span class="diagnosis-value">{{ success_message }}</span>
+                        </div>
+                        <div class="diagnosis-item">
+                            <label>Analysis Detail:</label>
+                            <p>{{ detailed_info }}</p>
+                        </div>
+                    </div>
                 </div>
                 {% endif %}
 

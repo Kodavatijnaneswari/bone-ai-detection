@@ -104,8 +104,20 @@ class DetectionAPIView(APIView):
 
                 if conf == best_box["conf"]:
                     stage = current_stage
+                    # High Accuracy Dataset Names for Mobile Output
+                    NAMES = ["Bone Fracture", "Bone Abnormality", "Complete Fracture", "Incomplete Fracture", "Dislocated Bone", "Suspected Abnormality", "Wrist Fracture"]
+                    try:
+                        name = NAMES[cls_id]
+                    except:
+                        name = "Bone Abnormality"
+
                     if cls_id == 6: stage = f"Wrist {current_stage}"
                     if cls_id == 0: stage = f"Elbow {current_stage}"
+                    
+                    if "Detected" in current_stage and name != "Bone Abnormality":
+                        stage = f"{name} ({current_stage})"
+                    else:
+                        stage = current_stage
 
                 cx, cy = (x1 + x2) // 2
                 # Tighter Gaussian sigma for pinpoint heatmap on affected area
