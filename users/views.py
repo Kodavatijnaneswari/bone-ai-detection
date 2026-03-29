@@ -84,7 +84,8 @@ if not os.path.exists(MODEL_PATH):
 
 try:
     if os.path.exists(MODEL_PATH):
-        model = YOLO(MODEL_PATH)
+        # Specifying task='detect' saves memory and prevents 'guessing' logic on startup
+        model = YOLO(MODEL_PATH, task='detect')
     else:
         print(f"Engine Load Warning: No model file found at {MODEL_PATH}")
         model = None
