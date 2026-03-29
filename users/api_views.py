@@ -7,31 +7,12 @@ from django.core.files.storage import default_storage
 from admins.models import modeldata
 from .models import DiagnosticResult
 from .serializers import DiagnosticResultSerializer, UserSerializer
-# from ultralytics import YOLO (Moved inside function to save memory)
+from .views import run_prediction
 import cv2
 import numpy as np
 
 # -------- LAZY MODEL LOADER --------
-_model = None
-
-def get_model():
-    global _model
-    if _model is None:
-        try:
-            from ultralytics import YOLO
-            MODEL_PATH = os.path.join(settings.BASE_DIR, 'media', 'YOLOv8x-best.onnx')
-            PT_FALLBACK_PATH = os.path.join(settings.BASE_DIR, 'media', 'YOLOv8x-best.pt')
-            
-            if not os.path.exists(MODEL_PATH) and os.path.exists(PT_FALLBACK_PATH):
-                MODEL_PATH = PT_FALLBACK_PATH
-            
-            if os.path.exists(MODEL_PATH):
-                _model = YOLO(MODEL_PATH, task='detect')
-            else:
-                print(f"API Error: No model found at {MODEL_PATH}")
-        except Exception as e:
-            print(f"API Model Load Error: {e}")
-    return _model
+# Lightweight Inference (Imported from views)
 
 class DetectionAPIView(APIView):
     def post(self, request, *args, **kwargs):
@@ -71,19 +52,11 @@ class DetectionAPIView(APIView):
                     "error": "Non-X-ray image detected. AI analysis is restricted to diagnostic grayscale medical X-rays for perfect accuracy."
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            model = get_model()
-
-            if model is None:
-                return Response({"error": "AI Diagnostic Engine not initialized"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            # --- YOLO Inference ---
-            results = model.predict(source=image_full_path, save=False, conf=0.10)
-            boxes = results[0].boxes
-            if not boxes:
-                results = model.predict(source=image_full_path, save=False, conf=0.03)
-                boxes = results[0].boxes
-
-            fracture_boxes = [box for box in boxes if int(box.cls[0]) in [0, 1, 2, 3, 4, 5, 6]]
+            # Use Lightweight Engine
+            fracture_boxes = run_prediction(image_full_path, conf_threshold=0.10)
+            
+            if not fracture_boxes:
+                fracture_boxes = run_prediction(image_full_path, conf_threshold=0.03)
 
             if not fracture_boxes:
                 # Save Normal Result
@@ -113,9 +86,9 @@ class DetectionAPIView(APIView):
             stage = "Abnormal"
             
             for box in fracture_boxes:
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                cls_id = int(box.cls[0])
-                conf = float(box.conf[0])
+                x1, y1, x2, y2 = box["box"]
+                cls_id = int(box["cls"])
+                conf = float(box["conf"])
                 box_w, box_h = x2 - x1, y2 - y1
                 area_ratio = (box_w * box_h) / (img.shape[0] * img.shape[1])
                 aspect_ratio = max(box_w, box_h) / (min(box_w, box_h) + 1e-6)
@@ -129,7 +102,7 @@ class DetectionAPIView(APIView):
                 else:
                      current_stage = "Fracture Abnormality Detected"
 
-                if conf == float(best_box.conf[0]):
+                if conf == best_box["conf"]:
                     stage = current_stage
                     if cls_id == 6: stage = f"Wrist {current_stage}"
                     if cls_id == 0: stage = f"Elbow {current_stage}"
@@ -140,7 +113,7 @@ class DetectionAPIView(APIView):
                 gauss = np.exp(-((X - cx)**2 + (Y - cy)**2) / (2 * sigma**2))
                 heatmap = np.maximum(heatmap, gauss)
                 cv2.rectangle(overlay, (x1, y1), (x2, y2), (0, 0, 255), 3)
-                label = f"{model.names[cls_id]} {conf:.2f}"
+                label = f"Diagnosis {conf:.2f}"
                 cv2.putText(overlay, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
             heatmap = np.uint8(255 * heatmap)
@@ -162,7 +135,7 @@ class DetectionAPIView(APIView):
                     processed_image=f"uploads/{output_filename}",
                     finding="Abnormal",
                     category=str(stage),
-                    confidence=float(best_box.conf[0])
+                    confidence=float(best_box["conf"])
                 )
 
             return Response({

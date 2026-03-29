@@ -8,7 +8,7 @@ from django.shortcuts import render, redirect
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.contrib import messages
-# from ultralytics import YOLO (Moved inside function to save memory)
+# import onnxruntime (Loaded inside function to save memory)
 from admins.models import modeldata
 from .models import DiagnosticResult
 
@@ -69,29 +69,101 @@ def training(request):
             print(f"Error parsing training logs: {e}")
     return render(request, 'users/training.html', {"training_data": training_data})
 
-# -------- LAZY MODEL LOADER --------
-_model = None
+# -------- LIGHTWEIGHT ONNX INFERENCE ENGINE --------
+_session = None
 
 def get_model():
-    global _model
-    if _model is None:
+    global _session
+    if _session is None:
         try:
-            from ultralytics import YOLO
+            import onnxruntime as ort
             MODEL_PATH = os.path.join(settings.BASE_DIR, 'media', 'YOLOv8x-best.onnx')
-            PT_FALLBACK_PATH = os.path.join(settings.BASE_DIR, 'media', 'YOLOv8x-best.pt')
-            
-            if not os.path.exists(MODEL_PATH) and os.path.exists(PT_FALLBACK_PATH):
-                MODEL_PATH = PT_FALLBACK_PATH
             
             if os.path.exists(MODEL_PATH):
-                # Specifying task='detect' saves memory
-                _model = YOLO(MODEL_PATH, task='detect')
-                print(f"AI Engine Loaded: {MODEL_PATH}")
+                # Set execution providers to CPU for Render
+                _session = ort.InferenceSession(MODEL_PATH, providers=['CPUExecutionProvider'])
+                print(f"LITE AI Engine Loaded (ONNX): {MODEL_PATH}")
             else:
                 print(f"Error: No model found at {MODEL_PATH}")
         except Exception as e:
-            print(f"Model Load Error: {e}")
-    return _model
+            print(f"LITE Engine Load Error: {e}")
+    return _session
+
+def run_prediction(image_path, conf_threshold=0.10):
+    session = get_model()
+    if session is None: return []
+
+    # 1. Preprocess
+    img = cv2.imread(image_path)
+    if img is None: return []
+    h0, w0 = img.shape[:2]
+    
+    # Resize and normalize
+    input_size = 640
+    img_resized = cv2.resize(img, (input_size, input_size))
+    img_rgb = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB)
+    img_input = img_rgb.astype(np.float32) / 255.0
+    img_input = img_input.transpose(2, 0, 1) # HWC to CHW
+    img_input = np.expand_dims(img_input, axis=0) # CHW to NCHW
+
+    # 2. Inference
+    inputs = {session.get_inputs()[0].name: img_input}
+    outputs = session.run(None, inputs)
+    
+    # 3. Postprocess (YOLOv8 format: 1, 8, 8400)
+    # Output is 1 x (4 boxes + 4 classes) x 8400 candidates
+    preds = np.squeeze(outputs[0]) # (8, 8400)
+    preds = preds.transpose() # (8400, 8)
+    
+    results = []
+    for pred in preds:
+        box = pred[:4]
+        scores = pred[4:]
+        cls_id = np.argmax(scores)
+        conf = scores[cls_id]
+        
+        if conf > conf_threshold:
+            # Scale boxes back to original size
+            cx, cy, w, h = box
+            # rescale factors
+            x_scale = w0 / input_size
+            y_scale = h0 / input_size
+            
+            x1 = int((cx - w/2) * x_scale)
+            y1 = int((cy - h/2) * y_scale)
+            x2 = int((cx + w/2) * x_scale)
+            y2 = int((cy + h/2) * y_scale)
+            
+            results.append({
+                "box": [x1, y1, x2, y2],
+                "conf": float(conf),
+                "cls": int(cls_id)
+            })
+    
+    # Simple NMS (Non-Maximum Suppression) to avoid duplicates
+    if not results: return []
+    results.sort(key=lambda x: x["conf"], reverse=True)
+    kept = []
+    for r in results:
+        overlap = False
+        for k in kept:
+            # calculate IOU
+            ix1 = max(r["box"][0], k["box"][0])
+            iy1 = max(r["box"][1], k["box"][1])
+            ix2 = min(r["box"][2], k["box"][2])
+            iy2 = min(r["box"][3], k["box"][3])
+            iw = max(0, ix2 - ix1)
+            ih = max(0, iy2 - iy1)
+            inter = iw * ih
+            area_r = (r["box"][2]-r["box"][0]) * (r["box"][3]-r["box"][1])
+            area_k = (k["box"][2]-k["box"][0]) * (k["box"][3]-k["box"][1])
+            iou = inter / (area_r + area_k - inter + 1e-6)
+            if iou > 0.45:
+                overlap = True
+                break
+        if not overlap:
+            kept.append(r)
+    return kept
 
 # -------- IMAGE UPLOAD AND DETECTION --------
 def upload_image(request):
@@ -135,17 +207,11 @@ def upload_image(request):
                     "error_message": "Non-X-ray (Color) image detected. AI analysis is restricted to diagnostic grayscale medical X-rays for perfect accuracy."
                 })
 
-            model = get_model()
-            if model is None:
-                return render(request, "users/result.html", {"error_message": "AI Diagnostic Engine not initialized."})
-
-            results = model.predict(source=image_full_path, save=False, conf=0.10)
-            boxes = results[0].boxes
-            if not boxes:
-                results = model.predict(source=image_full_path, save=False, conf=0.03)
-                boxes = results[0].boxes
-
-            fracture_boxes = [box for box in boxes if int(box.cls[0]) in [0, 1, 2, 3, 4, 5, 6]]
+            # Use Lightweight Engine
+            fracture_boxes = run_prediction(image_full_path, conf_threshold=0.10)
+            
+            if not fracture_boxes:
+                fracture_boxes = run_prediction(image_full_path, conf_threshold=0.03)
 
             if not fracture_boxes:
                 # Save Normal Result
@@ -175,9 +241,9 @@ def upload_image(request):
             stage = "Abnormal"
             
             for box in fracture_boxes:
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                cls_id = int(box.cls[0])
-                conf = float(box.conf[0])
+                x1, y1, x2, y2 = box["box"]
+                cls_id = box["cls"]
+                conf = box["conf"]
                 box_w, box_h = x2 - x1, y2 - y1
                 area_ratio = (box_w * box_h) / (img.shape[0] * img.shape[1])
                 aspect_ratio = max(box_w, box_h) / (min(box_w, box_h) + 1e-6)
@@ -191,8 +257,15 @@ def upload_image(request):
                 else:
                      current_stage = "Fracture Abnormality Detected"
 
-                if conf == float(best_box.conf[0]):
+                if conf == best_box["conf"]:
                     stage = current_stage
+                    # Map IDs manually if needed, or use a list
+                    NAMES = ["Fracture", "Abnormal", "Complete", "Incomplete", "Dislocated", "Suspected", "Wrist"]
+                    try:
+                        name = NAMES[cls_id]
+                    except:
+                        name = "Abnormality"
+                    
                     if cls_id == 6: stage = f"Wrist {current_stage}"
                     if cls_id == 0: stage = f"Elbow {current_stage}"
 
@@ -202,7 +275,8 @@ def upload_image(request):
                 gauss = np.exp(-((X - cx)**2 + (Y - cy)**2) / (2 * sigma**2))
                 heatmap = np.maximum(heatmap, gauss)
                 cv2.rectangle(overlay, (x1, y1), (x2, y2), (0, 0, 255), 3)
-                label = f"{model.names[cls_id]} {conf:.2f}"
+                
+                label = f"Diagnosis {conf:.2f}"
                 cv2.putText(overlay, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
             heatmap = np.uint8(255 * heatmap)
@@ -224,7 +298,7 @@ def upload_image(request):
                         processed_image=f"uploads/{output_filename}",
                         finding="Abnormal",
                         category=str(stage),
-                        confidence=float(best_box.conf[0])
+                        confidence=float(best_box["conf"])
                     )
             except Exception as db_e:
                 print(f"DB Error (Abnormal): {db_e}")
