@@ -43,9 +43,17 @@ class DetectionAPIView(APIView):
         image_full_path = os.path.join(settings.MEDIA_ROOT, image_path)
 
         try:
+            # Step 1: Image Processing and Memory Optimization
             img = cv2.imread(image_full_path)
             if img is None:
-                return Response({"error": "Invalid image format"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'Invalid image format.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            h, w = img.shape[:2]
+            if h > 640 or w > 640:
+                scale = 640 / max(h, w)
+                img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+                cv2.imwrite(image_full_path, img) 
+                print(f"API Memory Optimized: Resized to {img.shape[1]}x{img.shape[0]}")
 
             # --- X-ray Validation ---
             b, g, r = cv2.split(img)
