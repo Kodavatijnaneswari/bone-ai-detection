@@ -55,6 +55,13 @@ class DetectionAPIView(APIView):
             # Use Lightweight Engine
             fracture_boxes = run_prediction(image_full_path, conf_threshold=0.10)
             
+            # Check for silent failure (e.g. model not found)
+            from .views import get_model
+            if get_model() is None:
+                return Response({
+                    "error": "AI Inference Engine is currently offline (Model Load Error). Please check server media/ folder."
+                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
             if not fracture_boxes:
                 fracture_boxes = run_prediction(image_full_path, conf_threshold=0.03)
 
@@ -119,7 +126,7 @@ class DetectionAPIView(APIView):
                     else:
                         stage = current_stage
 
-                cx, cy = (x1 + x2) // 2
+                cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
                 # Tighter Gaussian sigma for pinpoint heatmap on affected area
                 sigma = max(box_w / 6.0, box_h / 6.0, 10.0)
                 Y, X = np.ogrid[:img.shape[0], :img.shape[1]]
@@ -152,7 +159,7 @@ class DetectionAPIView(APIView):
                 )
 
             return Response({
-                "finding": "Abnormal",
+                "finding": stage,
                 "category": stage,
                 "confidence": float(best_box["conf"]),
                 "image_url": request.build_absolute_uri(processed_image_url)
