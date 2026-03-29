@@ -107,8 +107,8 @@ class DetectionAPIView(APIView):
                     if cls_id == 6: stage = f"Wrist {current_stage}"
                     if cls_id == 0: stage = f"Elbow {current_stage}"
 
-                cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-                # Tighter Gaussian sigma for diagnostic focus
+                cx, cy = (x1 + x2) // 2
+                # Tighter Gaussian sigma for pinpoint heatmap on affected area
                 sigma = max(box_w / 6.0, box_h / 6.0, 10.0)
                 Y, X = np.ogrid[:img.shape[0], :img.shape[1]]
                 gauss = np.exp(-((X - cx)**2 + (Y - cy)**2) / (2 * sigma**2))
@@ -119,7 +119,7 @@ class DetectionAPIView(APIView):
 
             heatmap = np.uint8(255 * heatmap)
             heatmap_color = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-            alpha, mask = 0.7, heatmap > 15 # Maximized Clinical Intensity
+            alpha, mask = 0.6, heatmap > 20 # Increased Alpha for higher intensity
             overlay[mask] = cv2.addWeighted(img, 1 - alpha, heatmap_color, alpha, 0)[mask]
 
             output_filename = "api_detected_" + uploaded_image.name
