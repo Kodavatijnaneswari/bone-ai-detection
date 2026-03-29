@@ -34,9 +34,9 @@ class DetectionAPIView(APIView):
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             hist = cv2.calcHist([gray], [0], None, [256], [0,256])
             
-            # Synchronized Strict Thresholds
-            is_perfectly_gray = mean_diff < 5.0
-            is_valid_medical_tone = mean_diff < 12.0
+            # Ultimate relaxation to support specialized clinical Radiographs (watermarked/tinted)
+            is_perfectly_gray = mean_diff < 15.0
+            is_valid_medical_tone = mean_diff < 50.0
             background_ratio = np.sum(hist[:40]) / np.sum(hist)
             bone_peak_ratio = np.sum(hist[120:]) / np.sum(hist)
             
@@ -141,7 +141,7 @@ class DetectionAPIView(APIView):
             return Response({
                 "finding": "Abnormal",
                 "category": stage,
-                "confidence": float(best_box.conf[0]),
+                "confidence": float(best_box["conf"]),
                 "image_url": request.build_absolute_uri(processed_image_url)
             }, status=status.HTTP_200_OK)
 

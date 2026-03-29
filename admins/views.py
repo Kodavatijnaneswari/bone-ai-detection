@@ -9,13 +9,17 @@ def adminhome(request):
 def register(request):
     if request.method == 'POST':
         form = modeldataForm(request.POST)
-        if form.is_valid():
-            form.save()
-            form = modeldataForm()
-            messages.success(request, 'Registered Successfully! Please wait for admin activation.')
-            return render(request, 'register.html', {'form': form, 'message': 'Registered Successfully'})
-        else:
-            messages.error(request, 'Please correct the errors below.')
+        try:
+            if form.is_valid():
+                form.save()
+                form = modeldataForm()
+                messages.success(request, 'Registered Successfully! Please wait for admin activation.')
+                return render(request, 'register.html', {'form': form, 'message': 'Registered Successfully'})
+            else:
+                messages.error(request, 'Please correct the validation errors below (Check password strength and mobile digits).')
+        except Exception as e:
+            messages.error(request, f'Registration Database Error: {str(e)}')
+            print(f"CRITICAL REGISTRATION ERROR: {e}")
     else:
         form = modeldataForm()
     return render(request, 'register.html', {'form': form})
