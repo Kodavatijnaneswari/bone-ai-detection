@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Wrist_Abnormality_Detection.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Bone_Abnormality_Detection.settings')
 
 application = get_wsgi_application()
