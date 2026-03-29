@@ -13,19 +13,19 @@ class modeldataForm(forms.ModelForm):
         }
 
     def clean_name(self):
-        name = self.cleaned_data.get('name')
+        name = self.cleaned_data.get('name') or ""
         if not re.match(r'^[a-zA-Z\s]+$', name):
             raise ValidationError('Name should contain only letters and spaces.')
         return name
 
     def clean_username(self):
-        username = self.cleaned_data.get('username')
+        username = self.cleaned_data.get('username') or ""
         if not re.match(r'^[a-zA-Z0-9_.-]+$', username):
             raise ValidationError('Username can contain only letters, numbers, dots, underscores, and hyphens.')
         return username
 
     def clean_password(self):
-        password = self.cleaned_data.get('password')
+        password = self.cleaned_data.get('password') or ""
         if not re.match(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$', password):
             raise ValidationError(
                 'Password must be at least 8 characters long and include at least one letter and one number.'
@@ -33,13 +33,13 @@ class modeldataForm(forms.ModelForm):
         return password
 
     def clean_mobile(self):
-        mobile = self.cleaned_data.get('mobile')
+        mobile = self.cleaned_data.get('mobile') or ""
         if not re.match(r'^\d{10}$', mobile):
             raise ValidationError('Mobile number must be exactly 10 digits.')
         return mobile
 
     def clean_email(self):
-        email = self.cleaned_data.get('email')
+        email = self.cleaned_data.get('email') or ""
         if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
             raise ValidationError('Enter a valid email address.')
         return email

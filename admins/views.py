@@ -1,7 +1,8 @@
-from django.shortcuts import render,redirect
+from django.shortcuts import render, redirect
 from .models import modeldata
 from .forms import modeldataForm
 from django.contrib import messages
+from django.db import IntegrityError
 
 def adminhome(request):
     return render(request, 'admins/adminhome.html')
@@ -10,10 +11,13 @@ def register(request):
     if request.method == 'POST':
         form = modeldataForm(request.POST)
         if form.is_valid():
-            form.save()
-            form = modeldataForm()
-            messages.success(request, 'Registered Successfully! Please wait for admin activation.')
-            return render(request, 'register.html', {'form': form, 'message': 'Registered Successfully'})
+            try:
+                form.save()
+                form = modeldataForm()
+                messages.success(request, 'Registered Successfully! Please wait for admin activation.')
+                return render(request, 'register.html', {'form': form, 'message': 'Registered Successfully'})
+            except IntegrityError:
+                messages.error(request, 'Username already exists. Please choose another one.')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
