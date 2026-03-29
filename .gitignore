@@ -26,7 +26,8 @@ db.sqlite3
 media/
 local_settings.py
 staticfiles/
-**/migrations/*.py
+# migrations/ are now ALLOWED for production schema availability
+!**/migrations/*.py
 !**/migrations/__init__.py
 
 # ML / YOLO
