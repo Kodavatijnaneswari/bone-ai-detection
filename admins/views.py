@@ -16,10 +16,15 @@ def register(request):
                 messages.success(request, 'Registered Successfully! Please wait for admin activation.')
                 return render(request, 'register.html', {'form': form, 'message': 'Registered Successfully'})
             else:
-                messages.error(request, 'Please correct the validation errors below (Check password strength and mobile digits).')
+                # Show specific field errors to the user in messages
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"{field.capitalize()}: {error}")
+                messages.error(request, 'Please correct the validation errors below.')
         except Exception as e:
-            messages.error(request, f'Registration Database Error: {str(e)}')
-            print(f"CRITICAL REGISTRATION ERROR: {e}")
+            error_msg = f'Critical Registration Error: {str(e)}'
+            messages.error(request, error_msg)
+            print(f"--- 🚨 REGISTRATION CRASH 🚨 ---\n{error_msg}")
     else:
         form = modeldataForm()
     return render(request, 'register.html', {'form': form})

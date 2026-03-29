@@ -86,63 +86,69 @@ def get_model():
             else:
                 print(f"Error: No model found at {MODEL_PATH}")
         except Exception as e:
-            print(f"LITE Engine Load Error: {e}")
+            print(f"--- 🚨 LITE Engine Load Error 🚨 ---\n{e}")
+            _session = None
     return _session
 
 def run_prediction(image_path, conf_threshold=0.10):
     session = get_model()
     if session is None: return []
 
-    # 1. Preprocess
-    img = cv2.imread(image_path)
-    if img is None: return []
-    h0, w0 = img.shape[:2]
-    
-    # Resize and normalize (Aligned with Model Expectation)
-    input_size = 320
-    img_resized = cv2.resize(img, (input_size, input_size))
-    img_rgb = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB)
-    img_input = img_rgb.astype(np.float32) / 255.0
-    img_input = img_input.transpose(2, 0, 1) # HWC to CHW
-    img_input = np.expand_dims(img_input, axis=0) # CHW to NCHW
-
-    # 2. Inference
-    inputs = {session.get_inputs()[0].name: img_input}
-    outputs = session.run(None, inputs)
-    
-    # 3. Postprocess (YOLOv8 format: 1, 8, 8400)
-    # Output is 1 x (4 boxes + 4 classes) x 8400 candidates
-    preds = np.squeeze(outputs[0]) # (8, 8400)
-    preds = preds.transpose() # (8400, 8)
-    
-    results = []
-    for pred in preds:
-        scores = pred[4:]
-        cls_id = np.argmax(scores)
-        conf = float(scores[cls_id])
+    try:
+        # 1. Preprocess
+        img = cv2.imread(image_path)
+        if img is None: return []
+        h0, w0 = img.shape[:2]
         
-        if conf > conf_threshold:
-            # Scale boxes back to original size
-            box = pred[:4]
-            cx, cy, w, h = box
-            # rescale factors
-            x_scale = w0 / float(input_size)
-            y_scale = h0 / float(input_size)
+        # Resize and normalize (Aligned with Model Expectation)
+        input_size = 320
+        img_resized = cv2.resize(img, (input_size, input_size))
+        img_rgb = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB)
+        img_input = img_rgb.astype(np.float32) / 255.0
+        img_input = img_input.transpose(2, 0, 1) # HWC to CHW
+        img_input = np.expand_dims(img_input, axis=0) # CHW to NCHW
+    
+        # 2. Inference
+        inputs = {session.get_inputs()[0].name: img_input}
+        outputs = session.run(None, inputs)
+        
+        # 3. Postprocess (YOLOv8 format: 1, 8, 8400)
+        # Output is 1 x (4 boxes + 4 classes) x 8400 candidates
+        preds = np.squeeze(outputs[0]) # (8, 8400)
+        preds = preds.transpose() # (8400, 8)
+        
+        results = []
+        for pred in preds:
+            scores = pred[4:]
+            cls_id = np.argmax(scores)
+            conf = float(scores[cls_id])
             
-            x1 = int((cx - w/2.0) * x_scale)
-            y1 = int((cy - h/2.0) * y_scale)
-            x2 = int((cx + w/2.0) * x_scale)
-            y2 = int((cy + h/2.0) * y_scale)
-            
-            # Clamp to image boundaries
-            x1, y1 = max(0, x1), max(0, y1)
-            x2, y2 = min(w0, x2), min(h0, y2)
-            
-            results.append({
-                "box": [x1, y1, x2, y2],
-                "conf": conf,
-                "cls": int(cls_id)
-            })
+            if conf > conf_threshold:
+                # Scale boxes back to original size
+                box = pred[:4]
+                cx, cy, w, h = box
+                # rescale factors
+                x_scale = w0 / float(input_size)
+                y_scale = h0 / float(input_size)
+                
+                x1 = int((cx - w/2.0) * x_scale)
+                y1 = int((cy - h/2.0) * y_scale)
+                x2 = int((cx + w/2.0) * x_scale)
+                y2 = int((cy + h/2.0) * y_scale)
+                
+                # Clamp to image boundaries
+                x1, y1 = max(0, x1), max(0, y1)
+                x2, y2 = min(w0, x2), min(h0, y2)
+                
+                results.append({
+                    "box": [x1, y1, x2, y2],
+                    "conf": float(conf),
+                    "cls": int(cls_id)
+                })
+    
+    except Exception as e:
+        print(f"--- 🚨 PREDICTION PROCESSING ERROR 🚨 ---\n{e}")
+        return []
     
     # Simple NMS (Non-Maximum Suppression) to avoid duplicates
     if not results: return []
