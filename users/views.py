@@ -117,26 +117,30 @@ def run_prediction(image_path, conf_threshold=0.10):
     
     results = []
     for pred in preds:
-        box = pred[:4]
         scores = pred[4:]
         cls_id = np.argmax(scores)
-        conf = scores[cls_id]
+        conf = float(scores[cls_id])
         
         if conf > conf_threshold:
             # Scale boxes back to original size
+            box = pred[:4]
             cx, cy, w, h = box
             # rescale factors
-            x_scale = w0 / input_size
-            y_scale = h0 / input_size
+            x_scale = w0 / float(input_size)
+            y_scale = h0 / float(input_size)
             
-            x1 = int((cx - w/2) * x_scale)
-            y1 = int((cy - h/2) * y_scale)
-            x2 = int((cx + w/2) * x_scale)
-            y2 = int((cy + h/2) * y_scale)
+            x1 = int((cx - w/2.0) * x_scale)
+            y1 = int((cy - h/2.0) * y_scale)
+            x2 = int((cx + w/2.0) * x_scale)
+            y2 = int((cy + h/2.0) * y_scale)
+            
+            # Clamp to image boundaries
+            x1, y1 = max(0, x1), max(0, y1)
+            x2, y2 = min(w0, x2), min(h0, y2)
             
             results.append({
                 "box": [x1, y1, x2, y2],
-                "conf": float(conf),
+                "conf": conf,
                 "cls": int(cls_id)
             })
     
