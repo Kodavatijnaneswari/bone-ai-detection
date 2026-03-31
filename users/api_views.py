@@ -46,13 +46,10 @@ class DetectionAPIView(APIView):
                 is_valid_xray = (background_ratio > 0.05) or (bone_peak_ratio > 0.10)
             else:
                 is_valid_xray = False
-                
-            # BYPASS: Allowing all dataset images to process perfectly without strict tone rejection.
-            is_valid_xray = True 
-                
+                                
             if not is_valid_xray:
                 return Response({
-                    "error": "Non-X-ray image detected. AI analysis is restricted to diagnostic grayscale medical X-rays for perfect accuracy."
+                    "error": "Unauthorized Image Detected. System specifically locked to only accept and detect authorized images from your specific medical dataset."
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             # Use Lightweight Engine

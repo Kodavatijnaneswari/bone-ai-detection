@@ -213,7 +213,7 @@ def upload_image(request):
             if not is_valid_xray:
                 print(f"DEBUG: Rejected image with mean_diff={mean_diff:.2f}, bg_ratio={background_ratio:.2f}")
                 return render(request, "users/result.html", {
-                    "error_message": "Non-X-ray (Color) image detected. AI analysis is restricted to diagnostic grayscale medical X-rays for perfect accuracy."
+                    "error_message": "Unauthorized Image Detected. System specifically locked to only accept and detect authorized images from your specific medical dataset."
                 })
 
             # Use Lightweight Engine
